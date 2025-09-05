@@ -1,0 +1,245 @@
+<div class="bg-gray-100 min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow-md">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16 items-center">
+          <div class="flex items-center space-x-3">
+            <div class="h-10 w-10 rounded bg-blue-600 grid place-items-center text-white font-bold">RS</div>
+            <span class="font-semibold text-xl text-gray-800">
+              Reclamation &amp; Bug System
+            </span>
+          </div>
+
+         
+          <div class="flex items-center space-x-4">
+           
+
+           <button class="px-3 py-1.5 rounded-md bg-slate-900 text-white text-sm hover:bg-black" (click)="logout()">
+          Logout
+        </button>
+          </div>
+
+          <button class="md:hidden text-gray-700 hover:text-blue-600 focus:outline-none" aria-label="Open menu"
+                  (click)="mobileOpen = !mobileOpen">
+            <i class="fas fa-bars fa-lg"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile menu -->
+      <div class="md:hidden bg-white border-t border-gray-200" [class.hidden]="!mobileOpen">
+        <a class="block px-4 py-3 text-gray-700 hover:bg-gray-100" (click)="scrollTo('dashboard')">Dashboard</a>
+        <a class="block px-4 py-3 text-gray-700 hover:bg-gray-100" (click)="scrollTo('declare')">Declare Reclamation</a>
+        <a class="block px-4 py-3 text-gray-700 hover:bg-gray-100" (click)="scrollTo('reclamations')">Reclamations</a>
+      </div>
+    </nav>
+
+    <div class="flex flex-1 overflow-hidden">
+      <!-- Sidebar -->
+      <aside class="hidden md:flex md:flex-col md:w-64 bg-white border-r border-gray-200 overflow-y-auto">
+        <div class="flex flex-col p-6 space-y-6">
+          <nav class="flex flex-col space-y-2">
+            <button class="text-left flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-blue-100 hover:text-blue-700"
+                    (click)="scrollTo('dashboard')">
+              <i class="fas fa-tachometer-alt w-5"></i><span>Dashboard</span>
+            </button>
+            <button class="text-left flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-blue-100 hover:text-blue-700"
+                    (click)="scrollTo('declare')">
+              <i class="fas fa-plus-circle w-5"></i><span>Declare Reclamation</span>
+            </button>
+            <button class="text-left flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-blue-100 hover:text-blue-700"
+                    (click)="scrollTo('reclamations')">
+              <i class="fas fa-bug w-5"></i><span>Reclamations</span>
+            </button>
+           
+          </nav>
+        </div>
+      </aside>
+
+      <!-- Main -->
+      <main class="flex-1 overflow-y-auto p-6">
+        <!-- Dashboard Section -->
+        <section class="mb-10" id="dashboard">
+          <h1 class="text-3xl font-semibold text-gray-800 mb-6">
+            Welcome back, {{ userName() || 'Agent' }}
+          </h1>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-5 flex items-center space-x-4" title="Total reclamations declared by the agent">
+              <div class="p-3 bg-blue-100 text-blue-600 rounded-full"><i class="fas fa-file-alt fa-lg"></i></div>
+              <div>
+                <p class="text-sm font-medium text-gray-500">Total Reclamations</p>
+                <p class="text-2xl font-semibold text-gray-800">{{ stats().total }}</p>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-5 flex items-center space-x-4" title="Reclamations currently open and pending">
+              <div class="p-3 bg-yellow-100 text-yellow-600 rounded-full"><i class="fas fa-hourglass-half fa-lg"></i></div>
+              <div>
+                <p class="text-sm font-medium text-gray-500">Open Reclamations</p>
+                <p class="text-2xl font-semibold text-gray-800">{{ stats().open }}</p>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-5 flex items-center space-x-4" title="Reclamations resolved or closed">
+              <div class="p-3 bg-green-100 text-green-600 rounded-full"><i class="fas fa-check-circle fa-lg"></i></div>
+              <div>
+                <p class="text-sm font-medium text-gray-500">Resolved</p>
+                <p class="text-2xl font-semibold text-gray-800">{{ stats().resolved }}</p>
+              </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-5 flex items-center space-x-4" title="Reclamations marked as urgent or critical">
+              <div class="p-3 bg-red-100 text-red-600 rounded-full"><i class="fas fa-exclamation-triangle fa-lg"></i></div>
+              <div>
+                <p class="text-sm font-medium text-gray-500">Urgent</p>
+                <p class="text-2xl font-semibold text-gray-800">{{ stats().urgent }}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Declare Reclamation Section -->
+        <section class="mb-10 bg-white rounded-lg shadow p-6 max-w-3xl mx-auto" id="declare">
+          <h2 class="text-2xl font-semibold text-gray-800 mb-6">Declare a New Reclamation</h2>
+
+          <form class="space-y-6" (ngSubmit)="submit()" #f="ngForm">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+              <input class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                     name="title" [(ngModel)]="form.title" required placeholder="Brief title of the issue"/>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <textarea class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        name="description" [(ngModel)]="form.description" rows="4" required
+                        placeholder="Detailed description of the problem or bug"></textarea>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <select class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      name="category" [(ngModel)]="form.category" required>
+                <option [ngValue]="''" disabled selected>Select category</option>
+                <option value="hardware">Hardware</option>
+                <option value="software">Software</option>
+                <option value="network">Network</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+              <select class="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      name="priority" [(ngModel)]="form.priority" required>
+                <option [ngValue]="''" disabled selected>Select priority</option>
+                <option value="LOW">Low</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HIGH">High</option>
+                <option value="CRITICAL">Urgent</option>
+              </select>
+            </div>
+
+           
+
+            <div>
+              <button class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-md shadow"
+                      [disabled]="loading || f.invalid" type="submit">
+                {{ loading ? 'Submitting…' : 'Submit Reclamation' }}
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <!-- Reclamations List Section -->
+        <section class="mb-10 max-w-7xl mx-auto" id="reclamations">
+          <h2 class="text-2xl font-semibold text-gray-800 mb-6">Reclamations</h2>
+
+          <div class="overflow-x-auto bg-white rounded-lg shadow">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Declared By</th>
+                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                  <th class="relative px-6 py-3"><span class="sr-only">View</span></th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <tr *ngFor="let rec of tickets()">
+                  <td class="px-6 py-4 whitespace-nowrap text-gray-900 font-medium">{{ rec.title }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-gray-700">{{ rec.category || '—' }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                          [ngClass]="priorityBadge(rec.priority)">
+                      {{ priorityLabel(rec.priority) }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full"
+                          [ngClass]="statusBadge(rec.status)">
+                      {{ statusLabel(rec.status) }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-gray-700">
+                    {{ rec.createdBy?.name || rec.createdBy?.email || userName() || 'Me' }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-gray-700">{{ rec.createdAt | date:'yyyy-MM-dd' }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button class="text-blue-600 hover:text-blue-900" (click)="open(rec)">View</button>
+                  </td>
+                </tr>
+
+                <tr *ngIf="!loading && tickets().length === 0">
+                  <td class="px-6 py-8 text-center text-gray-500" colspan="7">No reclamations yet.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Modal -->
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+             [class.hidden]="!modalOpen()"
+             role="dialog" aria-modal="true" aria-labelledby="modal-title">
+          <div class="bg-white rounded-lg shadow-lg max-w-3xl w-full mx-4 sm:mx-0 p-6 relative">
+            <button class="absolute top-4 right-4 text-gray-600 hover:text-gray-900 focus:outline-none"
+                    aria-label="Close modal" (click)="close()">
+              <i class="fas fa-times fa-lg"></i>
+            </button>
+
+            <h3 class="text-xl font-semibold text-gray-800 mb-4" id="modal-title">Reclamation Details</h3>
+
+            <div class="space-y-2 text-gray-700" *ngIf="selected() as rec">
+              <p><strong>Title:</strong> {{ rec.title }}</p>
+              <p><strong>Description:</strong> {{ rec.description }}</p>
+              <p><strong>Category:</strong> {{ rec.category || '—' }}</p>
+              <p><strong>Priority:</strong> {{ priorityLabel(rec.priority) }}</p>
+              <p><strong>Status:</strong> <span class="font-semibold">{{ statusLabel(rec.status) }}</span></p>
+              <p><strong>Declared By:</strong> {{ rec.createdBy?.name || rec.createdBy?.email || userName() || 'Me' }}</p>
+              <p><strong>Date:</strong> {{ rec.createdAt | date:'yyyy-MM-dd' }}</p>
+            </div>
+
+            <div class="mt-6 flex justify-end space-x-3" *ngIf="selected() as rec2">
+              <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md shadow"
+                      (click)="setStatus(rec2, 'RESOLVED')">
+                Mark as Resolved
+              </button>
+              <button class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-md shadow"
+                      (click)="setStatus(rec2, 'OPEN')">
+                Mark as Open
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Placeholder for settings anchor -->
+        <section id="settings" class="sr-only"></section>
+      </main>
+    </div>
+  </div>

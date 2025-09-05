@@ -1,0 +1,149 @@
+<div class="min-h-screen bg-slate-50 text-slate-800">
+  <!-- Header -->
+  <header class="bg-white border-b border-slate-200">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="flex items-center space-x-3">
+          <div class="h-10 w-10 rounded bg-blue-600 grid place-items-center text-white font-bold">RS</div>
+          <span class="font-semibold text-xl text-gray-800">
+            Reclamation &amp; Bug System
+          </span>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+
+        <button class="px-3 py-1.5 rounded-md bg-slate-900 text-white text-sm hover:bg-black" (click)="logout()">
+          Logout
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-6 space-y-6">
+    <!-- Filters / search -->
+    <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
+      <div class="grid md:grid-cols-5 gap-3 items-end">
+        <!-- Search (debounced) -->
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium mb-1">Search</label>
+          <input
+            [ngModel]="q()"
+            (ngModelChange)="onSearchChange($event)"
+            name="q"
+            class="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3B6CF0]"
+            placeholder="Search by title, description, reporter..."
+          />
+          <div *ngIf="q()" class="mt-1 text-xs text-slate-500">Filtering by “{{ q() }}”</div>
+        </div>
+
+        <!-- Status -->
+        <div>
+          <label class="block text-sm font-medium mb-1">Status</label>
+          <select
+            [ngModel]="statusFilter()"
+            (ngModelChange)="statusFilter.set($event); onFiltersChange()"
+            name="statusFilter"
+            class="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3B6CF0]"
+          >
+            <option value="">All</option>
+            <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+          </select>
+        </div>
+
+        <!-- Priority -->
+        <div>
+          <label class="block text-sm font-medium mb-1">Priority</label>
+          <select
+            [ngModel]="priorityFilter()"
+            (ngModelChange)="priorityFilter.set($event); onFiltersChange()"
+            name="priorityFilter"
+            class="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3B6CF0]"
+          >
+            <option value="">All</option>
+            <option *ngFor="let p of priorities" [value]="p">{{ p }}</option>
+          </select>
+        </div>
+
+        <!-- Reset -->
+        <div class="flex gap-2">
+          <button
+            class="w-full px-3 py-2 rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50"
+            (click)="resetFilters()"
+            [disabled]="!q() && !statusFilter() && !priorityFilter()"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
+
+      <!-- Tiny summary row -->
+      <div class="mt-3 flex flex-wrap gap-2 text-xs">
+        <span *ngIf="statusFilter()" class="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200">
+          Status: {{ statusFilter() }}
+        </span>
+        <span *ngIf="priorityFilter()" class="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200">
+          Priority: {{ priorityFilter() }}
+        </span>
+        <span *ngIf="!statusFilter() && !priorityFilter() && !q()" class="text-slate-500">No filters applied</span>
+      </div>
+    </section>
+
+    <!-- Tickets -->
+    <section class="bg-white rounded-xl shadow-sm border border-slate-200">
+      <div class="p-4 sm:p-6 border-b border-slate-100 flex items-center justify-between">
+        <h2 class="font-bold text-lg">All tickets</h2>
+        <span class="text-sm text-slate-500">{{ filtered().length }} items</span>
+      </div>
+
+      <div class="p-4 sm:p-6 grid gap-3">
+        <div *ngFor="let t of filtered()" class="rounded-lg border border-slate-200 p-4">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-sm px-2 py-0.5 rounded-full border" [ngClass]="badgeClass(t.status)">{{ t.status }}</span>
+                <span class="text-xs text-slate-500">{{ t.priority }}</span>
+              </div>
+              <h3 class="font-semibold mt-1">{{ t.title }}</h3>
+              <p class="text-sm text-slate-600 mt-1">{{ t.description }}</p>
+              <div class="text-xs text-slate-500 mt-2">
+                {{ t.category || '—' }} · created {{ t.createdAt | date:'short' }} · by {{ t.createdBy?.name || t.createdBy?.email || 'unknown' }}
+              </div>
+            </div>
+            <div class="text-xs text-slate-500">#{{ t._id }}</div>
+          </div>
+
+          <!-- Actions -->
+          <div class="mt-3 flex flex-wrap items-center gap-2">
+            <select
+              [(ngModel)]="t.status"
+              (change)="updateStatus(t)"
+              class="rounded-md border border-slate-300 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B6CF0]"
+            >
+              <option *ngFor="let s of statuses" [value]="s">{{ s }}</option>
+            </select>
+
+            <button class="px-2.5 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-sm"
+                    (click)="openComment(t._id)">Add note</button>
+          </div>
+
+          <!-- Quick note -->
+          <div *ngIf="noteFor === t._id" class="mt-3">
+            <textarea [(ngModel)]="noteText" rows="3"
+              class="w-full rounded-md border border-slate-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#3B6CF0]"
+              placeholder="Internal note or resolution details"></textarea>
+            <div class="mt-2 flex gap-2">
+              <button class="px-3 py-1.5 rounded-md bg-emerald-600 text-white text-sm hover:bg-emerald-700"
+                      (click)="saveNote(t._id)">Save</button>
+              <button class="px-3 py-1.5 rounded-md bg-slate-200 text-slate-800 text-sm hover:bg-slate-300"
+                      (click)="cancelNote()">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="!loading && filtered().length === 0" class="text-center text-slate-500 py-8">
+          No tickets found.
+        </div>
+      </div>
+    </section>
+  </main>
+</div>

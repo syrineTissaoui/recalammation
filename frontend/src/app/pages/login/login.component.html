@@ -1,0 +1,21 @@
+ <div class="container">
+    <div class="card" style="max-width:480px;margin:48px auto">
+      <h2>Connexion</h2>
+
+      <mat-form-field appearance="outline" class="w100">
+        <mat-label>Email</mat-label>
+        <input matInput [(ngModel)]="email" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="w100">
+        <mat-label>Mot de passe</mat-label>
+        <input matInput [(ngModel)]="password" type="password" />
+      </mat-form-field>
+
+      <button mat-raised-button color="primary" (click)="onLogin()">Se connecter</button>
+
+      <div style="margin-top:12px;">
+        <a routerLink="/register">Créer un compte</a>
+      </div>
+    </div>
+  </div>
