@@ -27,10 +27,10 @@ export interface Ticket {
   templateUrl: './cadre-dashboard.component.html',
 })
 export class CadreDashboardComponent {
-  
+  userName = '';
   loading = false;
 
-  // 🔁 filters as signals
+  // 🔁 Filters as signals (so computed(...) reacts)
   q = signal('');
   statusFilter = signal<Status | ''>('');
   priorityFilter = signal<Priority | ''>('');
@@ -43,16 +43,11 @@ export class CadreDashboardComponent {
 
   // Debounce for search
   private searchTimer?: any;
-
   onSearchChange(val: string) {
     if (this.searchTimer) clearTimeout(this.searchTimer);
     this.searchTimer = setTimeout(() => this.q.set(val), 250);
   }
-
-  onFiltersChange() {
-    // nothing needed; computed re-runs when signals change
-  }
-
+  onFiltersChange() {}
   resetFilters() {
     this.q.set('');
     this.statusFilter.set('');
@@ -61,13 +56,12 @@ export class CadreDashboardComponent {
 
   // Data
   tickets = signal<Ticket[]>([]);
- userName = signal<string | null>(null);
 
+  // Filtered view (reactive)
   filtered = computed(() => {
     const q = this.q().toLowerCase().trim();
     const sf = this.statusFilter();
     const pf = this.priorityFilter();
-
     return this.tickets().filter(t =>
       (!q ||
         t.title.toLowerCase().includes(q) ||
@@ -78,13 +72,56 @@ export class CadreDashboardComponent {
       (!pf || t.priority === pf)
     );
   });
+
+  // ============================
+  // 📊 STATISTICS (reactive)
+  // ============================
+
+  // Helpers
+  private countBy<T extends string>(items: Ticket[], key: (t: Ticket) => T): Record<T, number> {
+    return items.reduce((acc, cur) => {
+      const k = key(cur);
+     
+      acc[k] = (acc[k] ?? 0) + 1;
+      return acc;
+    }, {} as Record<T, number>);
+  }
+  percent(part: number, total: number) {
+    if (!total) return 0;
+    return Math.round((part / total) * 100);
+  }
+
+  // Overall stats (all tickets)
+  totalAll      = computed(() => this.tickets().length);
+  byStatusAll   = computed(() => this.countBy(this.tickets(), t => t.status));
+  byPriorityAll = computed(() => this.countBy(this.tickets(), t => t.priority));
+  resolvedAll   = computed(() => this.tickets().filter(t => t.status === 'RESOLVED').length);
+  resolutionRateAll = computed(() => this.percent(this.resolvedAll(), this.totalAll()));
+
+  // Filtered stats (current view)
+  totalView      = computed(() => this.filtered().length);
+  byStatusView   = computed(() => this.countBy(this.filtered(), t => t.status));
+  byPriorityView = computed(() => this.countBy(this.filtered(), t => t.priority));
+  resolvedView   = computed(() => this.filtered().filter(t => t.status === 'RESOLVED').length);
+  resolutionRateView = computed(() => this.percent(this.resolvedView(), this.totalView()));
+
+  // Mini “last 7 days” (based on createdAt)
+  private isInLastNDays(dateISO: string, n = 7) {
+    const d = new Date(dateISO);
+    const now = new Date();
+    const diff = (now.getTime() - d.getTime()) / (1000 * 3600 * 24);
+    return diff <= n;
+  }
+  createdLast7All  = computed(() => this.tickets().filter(t => this.isInLastNDays(t.createdAt, 7)).length);
+  createdLast7View = computed(() => this.filtered().filter(t => this.isInLastNDays(t.createdAt, 7)).length);
+
   constructor(
     private auth: AuthService,
     private api: TicketService,
     private router: Router
   ) {
     const u = this.auth.getUser?.();
-    this.userName.set(this.auth.getUser()?.name || this.auth.getUser()?.email || null);
+    this.userName = u?.name || 'Cadre';
     this.load();
   }
 
@@ -96,6 +133,11 @@ export class CadreDashboardComponent {
     };
   }
 
+  barWidth(count: number, total: number) {
+    const pct = this.percent(count, total);
+    return `${pct}%`;
+  }
+
   load() {
     this.loading = true;
     this.api.listAll().subscribe({
@@ -105,11 +147,9 @@ export class CadreDashboardComponent {
   }
 
   updateStatus(t: Ticket) {
-    console.log('[updateStatus] going to send', { id: t._id, status: t.status });
     this.api.updateStatus(t._id, t.status).subscribe({
-      next: (res) => console.log('[updateStatus] ok', res),
+      next: () => {},
       error: (err) => {
-        console.error('[updateStatus] error', err);
         alert(`Failed to update status: ` + (err?.error?.message ?? err?.message ?? 'unknown'));
       }
     });
